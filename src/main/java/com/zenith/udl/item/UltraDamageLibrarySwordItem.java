@@ -42,7 +42,7 @@ public class UltraDamageLibrarySwordItem extends SwordItem {
             // 0.0F, true);
             // EntityUltraHurtUtil.EntityUltraHurt(livingEntity,
             // LivingEntity.DATA_HEALTH_ID, 0.0F);
-            TargetManager.addTarget(livingEntity);
+            TargetManager.addHealthTarget(livingEntity);
             EntityDataUtil.entityUltraHurtAllHealth(livingEntity);
         }
         return false;

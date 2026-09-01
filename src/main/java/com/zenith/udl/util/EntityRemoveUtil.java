@@ -1,6 +1,5 @@
 package com.zenith.udl.util;
 
-import com.zenith.udl.manager.DeathTargetManager;
 import com.zenith.udl.manager.TargetManager;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.Entity;
@@ -21,16 +20,15 @@ public class EntityRemoveUtil {
         entity.levelCallback.onRemove(Entity.RemovalReason.DISCARDED);
         entity.entityData.set(Entity.DATA_POSE, Pose.DYING);
         entity.onRemovedFromWorld();
+        TargetManager.addKillTarget(entity);
         if (entity instanceof LivingEntity livingEntity) {
             livingEntity.deathTime = Integer.MAX_VALUE;
             livingEntity.setHealth(0.0F);
-            TargetManager.addTarget(livingEntity);
+            TargetManager.addHealthTarget(livingEntity);
             livingEntity.canUpdate(false);
             livingEntity.shouldRender(0,0,0);
             livingEntity.handleEntityEvent(EntityEvent.DEATH);
-            TargetManager.addTarget(livingEntity);
         }
-        DeathTargetManager.addTarget(entity);
         serverLevel.getChunkSource().chunkMap.removeEntity(entity);
 
     }

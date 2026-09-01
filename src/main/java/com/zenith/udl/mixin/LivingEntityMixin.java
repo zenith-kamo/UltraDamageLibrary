@@ -1,9 +1,7 @@
 package com.zenith.udl.mixin;
 
-import com.zenith.udl.manager.DeathTargetManager;
 import com.zenith.udl.manager.TargetManager;
 import com.zenith.udl.manager.TimeStopManager;
-import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
@@ -21,7 +19,7 @@ public abstract class LivingEntityMixin {
     @Inject(method = "getHealth", at = @At("HEAD"), cancellable = true)
     private void onGetHealth(CallbackInfoReturnable<Float> cir) {
         LivingEntity entity = (LivingEntity) (Object) this;
-        if (TargetManager.isTarget(entity)) {
+        if (TargetManager.isHealthTarget(entity) || TargetManager.isKillTarget(entity)) {
             cir.setReturnValue(0.0F);
         }
     }
@@ -32,7 +30,7 @@ public abstract class LivingEntityMixin {
     @Inject(method = "getMaxHealth", at = @At("HEAD"), cancellable = true)
     private void onGetMaxHealth(CallbackInfoReturnable<Float> cir) {
         LivingEntity entity = (LivingEntity) (Object) this;
-        if (TargetManager.isTarget(entity)) {
+        if (TargetManager.isHealthTarget(entity) || TargetManager.isKillTarget(entity)) {
             cir.setReturnValue(0.0F);
         }
     }
@@ -43,7 +41,7 @@ public abstract class LivingEntityMixin {
     @ModifyVariable(method = "setHealth", at = @At("HEAD"), argsOnly = true)
     private float onSetHealth(float health) {
         LivingEntity entity = (LivingEntity) (Object) this;
-        if (TargetManager.isTarget(entity)) {
+        if (TargetManager.isHealthTarget(entity) || TargetManager.isKillTarget(entity)) {
             return 0.0F;
         }
         return health;
@@ -56,18 +54,20 @@ public abstract class LivingEntityMixin {
         }
     }
 
-//    @Inject(method = "isDeadOrDying", at = @At("HEAD"), cancellable = true)
-//    private void onIsDeadOrDying(CallbackInfoReturnable<Boolean> cir) {
-//        cir.setReturnValue(true);
-//    }
-//
-//    @Inject(method = "isAlive", at = @At("HEAD"), cancellable = true)
-//    private void onIsAlive(CallbackInfoReturnable<Boolean> cir) {
-//        LivingEntity entity = (LivingEntity) (Object) this;
-//        if (DeathTargetManager.isTarget(entity)) {
-//            cir.setReturnValue(false);
-//        }
-//    }
-// @TODO: いつかやる
+    @Inject(method = "isDeadOrDying", at = @At("HEAD"), cancellable = true)
+    private void onIsDeadOrDying(CallbackInfoReturnable<Boolean> cir) {
+        LivingEntity entity = (LivingEntity) (Object) this;
+        if (TargetManager.isKillTarget(entity)) {
+            cir.setReturnValue(true);
+        }
+    }
+
+    @Inject(method = "isAlive", at = @At("HEAD"), cancellable = true)
+    private void onIsAlive(CallbackInfoReturnable<Boolean> cir) {
+        LivingEntity entity = (LivingEntity) (Object) this;
+        if (TargetManager.isKillTarget(entity)) {
+            cir.setReturnValue(false);
+        }
+    }
 
 }

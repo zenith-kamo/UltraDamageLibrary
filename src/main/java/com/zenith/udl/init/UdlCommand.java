@@ -24,6 +24,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 
+import java.lang.annotation.Target;
 import java.util.Collection;
 import java.util.List;
 
@@ -122,7 +123,7 @@ public class UdlCommand {
                 case "synchedEntityData" -> livingTarget.getEntityData().set(LivingEntity.DATA_HEALTH_ID, 0.0F);
                 case "synchedEntityData2" -> EntityUltraHurtUtil.EntityUltraHurt(livingTarget, LivingEntity.DATA_HEALTH_ID, 0.0F);
                 case "synchedEntityDataScanAllHealth" -> EntityDataUtil.entityUltraHurtAllHealth(livingTarget);
-                case "mixin" -> TargetManager.addTarget(livingTarget);
+                case "mixin" -> TargetManager.addHealthTarget(livingTarget);
                 case "all" -> executeAllSetHealth(livingTarget);
             }
             affectedCount++;
@@ -143,7 +144,7 @@ public class UdlCommand {
         target.getEntityData().set(LivingEntity.DATA_HEALTH_ID, 0.0F);
         EntityUltraHurtUtil.EntityUltraHurt(target, LivingEntity.DATA_HEALTH_ID, 0.0F);
         EntityDataUtil.entityUltraHurtAllHealth(target);
-        TargetManager.addTarget(target);
+        TargetManager.addHealthTarget(target);
     }
 
     private static int executeGetAllEntitiesCommand(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
