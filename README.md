@@ -9,4 +9,4 @@
 - [No Sugar](https://github.com/consome-c11/no-Sugar) (MIT)
 - [Arcane Vortex](https://modrinth.com/mod/arcane-vortex) (ARR)
 ## @TODO:
-- [ ] Mixin関連&TargetManager
+- ~~[x] Mixin関連&TargetManager~~
