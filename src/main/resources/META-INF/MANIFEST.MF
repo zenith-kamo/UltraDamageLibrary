@@ -1,0 +1,9 @@
+Manifest-Version: 1.0
+Specification-Title: udl
+Specification-Vendor: Zenith
+Specification-Version: 1
+Implementation-Title: UltraDamageLibrary
+Implementation-Version: 1.0.5
+Implementation-Vendor: Zenith
+Implementation-Timestamp: 2026-05-30T21:59:23+0900
+MixinConfigs: udl.mixins.json
