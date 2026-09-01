@@ -54,11 +54,11 @@ public class EntityTickMixin {
         }
     }
 
-    @Inject(method = "getRemovalReason", at = @At("HEAD"), cancellable = true)
-    private void onGetRemovalReason(CallbackInfoReturnable<Entity.RemovalReason> cir) {
-        Entity entity = (Entity) (Object) this;
-        if (TargetManager.isKillTarget(entity) || TargetManager.isKillTarget(entity)) {
-            cir.setReturnValue(Entity.RemovalReason.DISCARDED);
-        }
-    }
+//    @Inject(method = "getRemovalReason", at = @At("HEAD"), cancellable = true)
+//    private void onGetRemovalReason(CallbackInfoReturnable<Entity.RemovalReason> cir) {
+//        Entity entity = (Entity) (Object) this;
+//        if (TargetManager.isKillTarget(entity) || TargetManager.isKillTarget(entity)) {
+//            cir.setReturnValue(Entity.RemovalReason.DISCARDED);
+//        }
+//    }
 }
