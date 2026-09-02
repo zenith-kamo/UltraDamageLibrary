@@ -9,4 +9,5 @@
 - [No Sugar](https://github.com/consome-c11/no-Sugar) (MIT)
 - [Arcane Vortex](https://modrinth.com/mod/arcane-vortex) (ARR)
 ## @TODO:
-- ~~[x] Mixin関連&TargetManager~~
+- ~~Mixin関連&TargetManager~~
+- Unsafeで書き換え時に、自動保存でエンティティが復活してしまう（要検証）
