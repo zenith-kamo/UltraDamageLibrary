@@ -10,4 +10,5 @@
 - [Arcane Vortex](https://modrinth.com/mod/arcane-vortex) (ARR)
 ## @TODO:
 - ~~Mixin関連&TargetManager~~
-- Unsafeで書き換え時に、自動保存でエンティティが復活してしまう（要検証）
+- Unsafeで書き換え時に、自動保存でエンティティが復活してしまう（要検証） 
+  - permanentStorageで対応できたか確認する
