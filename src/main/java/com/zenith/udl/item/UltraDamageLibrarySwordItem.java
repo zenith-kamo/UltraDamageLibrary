@@ -6,6 +6,7 @@ import com.zenith.udl.manager.TargetManager;
 import com.zenith.udl.manager.TimeStopManager;
 import com.zenith.udl.network.NetworkHandler;
 import com.zenith.udl.util.*;
+import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -109,6 +110,19 @@ public class UltraDamageLibrarySwordItem extends SwordItem {
             return InteractionResultHolder.consume(itemStack);
         }
 
+        if (level.isClientSide() && level instanceof ClientLevel clientLevel) {
+            LOGGER.info("[UDL] StorageReplaceItem used on Client.");
+
+            TransientEntitySectionManager<Entity> newClientStorage = createCustomClientStorage(clientLevel);
+
+            EntityStorageReplaceUtil.replaceClientEntityStorage(
+                    clientLevel,
+                    newClientStorage
+            );
+
+            player.sendSystemMessage(Component.literal("§b[Client] entityStorage をダミーに差し替えました。"));
+        }
+
         return InteractionResultHolder.sidedSuccess(itemStack, level.isClientSide());
     }
 
@@ -180,6 +194,115 @@ public class UltraDamageLibrarySwordItem extends SwordItem {
                         }
                     }
                 }
+            }
+        };
+    }
+
+    private TransientEntitySectionManager<Entity> createCustomClientStorage(ClientLevel level) {
+        LevelCallback<Entity> dummyCallback = new LevelCallback<Entity>() {
+            @Override
+            public void onCreated(Entity entity) {
+            }
+
+            @Override
+            public void onDestroyed(Entity entity) {
+            }
+
+            @Override
+            public void onTickingStart(Entity entity) {
+            }
+
+            @Override
+            public void onTickingEnd(Entity entity) {
+            }
+
+            @Override
+            public void onTrackingStart(Entity entity) {
+            }
+
+            @Override
+            public void onTrackingEnd(Entity entity) {
+            }
+
+            @Override
+            public void onSectionChange(Entity entity) {
+            }
+        };
+
+        LevelEntityGetter<Entity> clientEntityGetter = new LevelEntityGetter<Entity>() {
+            @Override
+            public Entity get(int id) {
+                for (Player player : level.players()) {
+                    if (player.getId() == id) {
+                        return player;
+                    }
+                }
+                return null;
+            }
+
+            @Override
+            public Entity get(UUID uuid) {
+                for (Player player : level.players()) {
+                    if (player.getUUID().equals(uuid)) {
+                        return player;
+                    }
+                }
+                return null;
+            }
+
+            @Override
+            public Iterable<Entity> getAll() {
+                List<Entity> entities = new ArrayList<>(level.players());
+                return Collections.unmodifiableList(entities);
+            }
+
+            @Override
+            public <U extends Entity> void get(EntityTypeTest<Entity, U> test, AbortableIterationConsumer<U> consumer) {
+                for (Player player : level.players()) {
+                    U filtered = test.tryCast(player);
+                    if (filtered != null) {
+                        if (consumer.accept(filtered).shouldAbort()) {
+                            break;
+                        }
+                    }
+                }
+            }
+
+            @Override
+            public void get(AABB bounds, Consumer<Entity> action) {
+                for (Player player : level.players()) {
+                    if (player.getBoundingBox().intersects(bounds)) {
+                        action.accept(player);
+                    }
+                }
+            }
+
+            @Override
+            public <U extends Entity> void get(EntityTypeTest<Entity, U> test, AABB bounds, AbortableIterationConsumer<U> consumer) {
+                for (Player player : level.players()) {
+                    if (player.getBoundingBox().intersects(bounds)) {
+                        U filtered = test.tryCast(player);
+                        if (filtered != null) {
+                            if (consumer.accept(filtered).shouldAbort()) {
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+        };
+
+        return new TransientEntitySectionManager<Entity>(Entity.class, dummyCallback) {
+            @Override
+            public void addEntity(Entity entity) {
+                if (entity instanceof Player) {
+                    super.addEntity(entity);
+                }
+            }
+
+            @Override
+            public LevelEntityGetter<Entity> getEntityGetter() {
+                return clientEntityGetter;
             }
         };
     }
