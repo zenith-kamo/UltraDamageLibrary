@@ -17,6 +17,7 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.*;
+import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.entity.*;
 import net.minecraft.world.phys.AABB;
@@ -28,6 +29,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -62,11 +64,12 @@ public class UltraDamageLibrarySwordItem extends PickaxeItem {
 
             EntitySectionStorage<Entity> newSectionStorage = createCustomServerSectionStorage(serverLevel);
             LevelEntityGetter<Entity> newEntityGetter = createCustomServerEntityGetter(serverLevel);
+            EntityPersistentStorage<Entity> newPersistentStorage = createCustomServerStorage(serverLevel);
 
             LOGGER.info("[UDL] Starting field replacement on ServerLevel...");
             EntityStorageReplaceUtil.replaceServerEntityManagerFields(
                     serverLevel,
-                    null,
+                    newPersistentStorage,
                     newSectionStorage,
                     newEntityGetter
             );
@@ -306,6 +309,30 @@ public class UltraDamageLibrarySwordItem extends PickaxeItem {
             @Override
             public LevelEntityGetter<Entity> getEntityGetter() {
                 return clientEntityGetter;
+            }
+        };
+    }
+    private EntityPersistentStorage<Entity> createCustomServerStorage(ServerLevel level) {
+        return new EntityPersistentStorage<Entity>() {
+            @Override
+            public CompletableFuture<ChunkEntities<Entity>> loadEntities(ChunkPos pos) {
+                // 空のエンティティリストを返して読み込みをスキップ
+                return CompletableFuture.completedFuture(new ChunkEntities<>(pos, List.of()));
+            }
+
+            @Override
+            public void storeEntities(ChunkEntities<Entity> entities) {
+                // 保存処理をスキップ（何もしない）
+            }
+
+            @Override
+            public void flush(boolean empty) {
+                // フラッシュ処理をスキップ
+            }
+
+            @Override
+            public void close() {
+                // クローズ処理をスキップ
             }
         };
     }
