@@ -16,6 +16,7 @@ public class EntityRemoveUtil {
         entity.onClientRemoval();
         entity.invalidateCaps();
         entity.stopRiding();
+        entity.getPassengers().forEach(Entity::stopRiding);
         entity.removeVehicle();
         entity.levelCallback.onRemove(Entity.RemovalReason.DISCARDED);
         entity.entityData.set(Entity.DATA_POSE, Pose.DYING);
@@ -23,6 +24,7 @@ public class EntityRemoveUtil {
         TargetManager.addKillTarget(entity);
         if (entity instanceof LivingEntity livingEntity) {
             livingEntity.deathTime = Integer.MAX_VALUE;
+            livingEntity.isDeadOrDying();
             livingEntity.setHealth(0.0F);
             TargetManager.addHealthTarget(livingEntity);
             livingEntity.canUpdate(false);

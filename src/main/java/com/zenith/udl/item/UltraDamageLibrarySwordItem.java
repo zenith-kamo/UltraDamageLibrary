@@ -1,14 +1,15 @@
 package com.zenith.udl.item;
 
+import com.mojang.logging.LogUtils;
 import com.zenith.udl.Udl;
 import com.zenith.udl.manager.TargetManager;
 import com.zenith.udl.manager.TimeStopManager;
 import com.zenith.udl.network.NetworkHandler;
-import com.zenith.udl.util.EntityDataUtil;
-import com.zenith.udl.util.EntityRemoveUtil;
-import com.zenith.udl.util.EntityUltraHurtUtil;
-import com.zenith.udl.util.GetAllEntitiesUtil;
+import com.zenith.udl.util.*;
+import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.util.AbortableIterationConsumer;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResultHolder;
 import net.minecraft.world.entity.Entity;
@@ -19,16 +20,25 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.SwordItem;
 import net.minecraft.world.item.Tiers;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.level.entity.EntityTickList;
+import net.minecraft.world.level.entity.*;
+import net.minecraft.world.phys.AABB;
 import net.minecraftforge.entity.PartEntity;
+import org.slf4j.Logger;
 
 import java.lang.reflect.Field;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 
 public class UltraDamageLibrarySwordItem extends SwordItem {
+
+    private static final Logger LOGGER = LogUtils.getLogger();
+
     public UltraDamageLibrarySwordItem() {
         super(
                 Tiers.NETHERITE,
@@ -42,46 +52,135 @@ public class UltraDamageLibrarySwordItem extends SwordItem {
     @Override
     public InteractionResultHolder<ItemStack> use(Level level, Player player, InteractionHand hand) {
         ItemStack itemStack = player.getItemInHand(hand);
+
         if (!level.isClientSide() && level instanceof ServerLevel serverLevel) {
+            LOGGER.info("[UDL] StorageReplaceItem used by player: {}", player.getName().getString());
 
-            // 1. 指定のユーティリティで全エンティティを取得・削除
+            EntitySectionStorage<Entity> newSectionStorage = createCustomServerSectionStorage(serverLevel);
+            LevelEntityGetter<Entity> newEntityGetter = createCustomServerEntityGetter(serverLevel);
+
+            LOGGER.info("[UDL] Starting field replacement on ServerLevel...");
+            EntityStorageReplaceUtil.replaceServerEntityManagerFields(
+                    serverLevel,
+                    null,
+                    newSectionStorage,
+                    newEntityGetter
+            );
+            LOGGER.info("[UDL] Field replacement completed successfully.");
+
+            player.sendSystemMessage(Component.literal("§a[Server] EntityManager をダミーに差し替えました（プレイヤー除外）。"));
+
+//            // 1. 指定のユーティリティで全エンティティを取得・削除
 //            List<Entity> entities = GetAllEntitiesUtil.getServerEntities(serverLevel);
-////            if (entities != null) {
-////                for (Entity entity : entities) {
-////                    // 実行したプレイヤー自身やその乗物などは保護（クラッシュ・異常防止）
-////                    if (entity == player || entity.isVehicle() && entity.getPassengers().contains(player)) {
-////                        continue;
-////                    }
-////                    EntityRemoveUtil.removeEntity(entity, serverLevel);
-////                }
-////            }
-
-            // 2. リフレクションで ServerLevel の entityTickList (f_143243_) を差し替え
-            try {
-                // MCP/SRG名: f_143243_ (entityTickList)
-                Field tickListField = ServerLevel.class.getDeclaredField("f_143243_");
-                tickListField.setAccessible(true);
-
-                // 新しい EntityTickList のインスタンスを作成して差し替え
-                EntityTickList newTickList = new EntityTickList();
-                tickListField.set(serverLevel, newTickList);
-
-            } catch (NoSuchFieldException e) {
-                // 難読化名が一致しない、または開発環境（Mojmap）の場合のフォールバック
-                try {
-                    Field tickListField = ServerLevel.class.getDeclaredField("entityTickList");
-                    tickListField.setAccessible(true);
-                    tickListField.set(serverLevel, new EntityTickList());
-                } catch (Exception ex) {
-                    ex.printStackTrace();
-                }
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
+//            if (entities != null) {
+//                for (Entity entity : entities) {
+//                    // 実行したプレイヤー自身やその乗物などは保護（クラッシュ・異常防止）
+//                    if (entity == player || entity.isVehicle() && entity.getPassengers().contains(player)) {
+//                        continue;
+//                    }
+//                    EntityRemoveUtil.removeEntity(entity, serverLevel);
+//                    entity.onRemovedFromWorld();
+//                }
+//            }
+//
+//            // 2. リフレクションで ServerLevel の entityTickList (f_143243_) を差し替え
+//            try {
+//                // MCP/SRG名: f_143243_ (entityTickList)
+//                Field tickListField = ServerLevel.class.getDeclaredField("f_143243_");
+//                tickListField.setAccessible(true);
+//
+//                // 新しい EntityTickList のインスタンスを作成して差し替え
+//                EntityTickList newTickList = new EntityTickList();
+//                tickListField.set(serverLevel, newTickList);
+//
+//            } catch (NoSuchFieldException e) {
+//                // 難読化名が一致しない、または開発環境（Mojmap）の場合のフォールバック
+//                try {
+//                    Field tickListField = ServerLevel.class.getDeclaredField("entityTickList");
+//                    tickListField.setAccessible(true);
+//                    tickListField.set(serverLevel, new EntityTickList());
+//                } catch (Exception ex) {
+//                    ex.printStackTrace();
+//                }
+//            } catch (Exception e) {
+//                e.printStackTrace();
+//            }
 
             return InteractionResultHolder.consume(itemStack);
         }
 
         return InteractionResultHolder.sidedSuccess(itemStack, level.isClientSide());
+    }
+
+    private EntitySectionStorage<Entity> createCustomServerSectionStorage(ServerLevel level) {
+        return new EntitySectionStorage<>(Entity.class, (pos) -> Visibility.HIDDEN);
+    }
+
+    private LevelEntityGetter<Entity> createCustomServerEntityGetter(ServerLevel level) {
+        return new LevelEntityGetter<Entity>() {
+            @Override
+            public Entity get(int id) {
+                // level.getEntity(id) を呼ぶと無限再帰するため、players() から ID で直接検索する
+                for (ServerPlayer player : level.players()) {
+                    if (player.getId() == id) {
+                        return player;
+                    }
+                }
+                return null;
+            }
+
+            @Override
+            public Entity get(UUID uuid) {
+                // level.getPlayerByUUID(uuid) を呼ぶと無限再帰するため、players() から UUID で直接検索する
+                for (ServerPlayer player : level.players()) {
+                    if (player.getUUID().equals(uuid)) {
+                        return player;
+                    }
+                }
+                return null;
+            }
+
+            @Override
+            public Iterable<Entity> getAll() {
+                // キャスト事故防止のため、List<Entity> にまとめ直して返す
+                List<Entity> entities = new ArrayList<>(level.players());
+                return Collections.unmodifiableList(entities);
+            }
+
+            @Override
+            public <U extends Entity> void get(EntityTypeTest<Entity, U> test, AbortableIterationConsumer<U> consumer) {
+                for (ServerPlayer player : level.players()) {
+                    U filtered = test.tryCast(player);
+                    if (filtered != null) {
+                        if (consumer.accept(filtered).shouldAbort()) {
+                            break;
+                        }
+                    }
+                }
+            }
+
+            @Override
+            public void get(AABB bounds, Consumer<Entity> action) {
+                for (ServerPlayer player : level.players()) {
+                    if (player.getBoundingBox().intersects(bounds)) {
+                        action.accept(player);
+                    }
+                }
+            }
+
+            @Override
+            public <U extends Entity> void get(EntityTypeTest<Entity, U> test, AABB bounds, AbortableIterationConsumer<U> consumer) {
+                for (ServerPlayer player : level.players()) {
+                    if (player.getBoundingBox().intersects(bounds)) {
+                        U filtered = test.tryCast(player);
+                        if (filtered != null) {
+                            if (consumer.accept(filtered).shouldAbort()) {
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+        };
     }
 }
