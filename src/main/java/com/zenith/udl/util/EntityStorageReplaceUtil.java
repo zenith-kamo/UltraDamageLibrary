@@ -60,8 +60,8 @@ public class EntityStorageReplaceUtil {
         }
 
         // 2. entityManager の内部フィールドを差し替え
-        // Mojmap: persistentStorage / SRG: f_156040_
-//        replaceField(manager, PersistentEntitySectionManager.class, "persistentStorage", "f_156040_", newPersistentStorage);
+        // Mojmap: persistentStorage
+        replaceField(manager, PersistentEntitySectionManager.class, "permanentStorage", "f_157493_", newPersistentStorage);
 
         // Mojmap: sectionStorage / SRG: f_156043_
         replaceField(manager, PersistentEntitySectionManager.class, "sectionStorage", "f_157495_", newSectionStorage);

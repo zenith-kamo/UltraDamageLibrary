@@ -16,10 +16,7 @@ import net.minecraft.world.InteractionResultHolder;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.item.Item;
-import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.SwordItem;
-import net.minecraft.world.item.Tiers;
+import net.minecraft.world.item.*;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.entity.*;
 import net.minecraft.world.phys.AABB;
@@ -36,7 +33,13 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
-public class UltraDamageLibrarySwordItem extends SwordItem {
+
+/*
+* いったんPickaxeItemに変更。SwordItemだけ処理を防ぐゴミmodがあるので....
+*/
+
+
+public class UltraDamageLibrarySwordItem extends PickaxeItem {
 
     private static final Logger LOGGER = LogUtils.getLogger();
 
