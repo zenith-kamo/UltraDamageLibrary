@@ -24,6 +24,7 @@ import net.minecraft.world.phys.AABB;
 import net.minecraftforge.entity.PartEntity;
 import org.slf4j.Logger;
 
+import javax.annotation.Nullable;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -63,7 +64,7 @@ public class UltraDamageLibrarySwordItem extends PickaxeItem {
             LOGGER.info("[UDL] StorageReplaceItem used by player: {}", player.getName().getString());
 
             EntitySectionStorage<Entity> newSectionStorage = createCustomServerSectionStorage(serverLevel);
-            LevelEntityGetter<Entity> newEntityGetter = createCustomServerEntityGetter(serverLevel);
+            LevelEntityGetter<Entity> newEntityGetter = createCustomServerEntityGetter(serverLevel, newSectionStorage);
             EntityPersistentStorage<Entity> newPersistentStorage = createCustomServerStorage(serverLevel);
 
             LOGGER.info("[UDL] Starting field replacement on ServerLevel...");
@@ -136,35 +137,79 @@ public class UltraDamageLibrarySwordItem extends PickaxeItem {
         return new EntitySectionStorage<>(Entity.class, (pos) -> Visibility.HIDDEN);
     }
 
-    private LevelEntityGetter<Entity> createCustomServerEntityGetter(ServerLevel level) {
-        return new LevelEntityGetter<Entity>() {
+    private LevelEntityGetter<Entity> createCustomServerEntityGetter(ServerLevel level, EntitySectionStorage<Entity> sectionStorage) {
+        // 1. EntityLookup のダミー実装
+        EntityLookup<Entity> dummyLookup = new EntityLookup<Entity>() {
             @Override
-            public Entity get(int id) {
-                // level.getEntity(id) を呼ぶと無限再帰するため、players() から ID で直接検索する
+            public @org.jetbrains.annotations.Nullable Entity getEntity(int id) {
                 for (ServerPlayer player : level.players()) {
-                    if (player.getId() == id) {
-                        return player;
-                    }
+                    if (player.getId() == id) return player;
                 }
                 return null;
             }
 
             @Override
-            public Entity get(UUID uuid) {
-                // level.getPlayerByUUID(uuid) を呼ぶと無限再帰するため、players() から UUID で直接検索する
+            public @org.jetbrains.annotations.Nullable Entity getEntity(UUID uuid) {
                 for (ServerPlayer player : level.players()) {
-                    if (player.getUUID().equals(uuid)) {
-                        return player;
+                    if (player.getUUID().equals(uuid)) return player;
+                }
+                return null;
+            }
+
+            @Override
+            public Iterable<Entity> getAllEntities() {
+                List<Entity> players = new ArrayList<>(level.players());
+                return Collections.unmodifiableList(players);
+            }
+
+            @Override
+            public <U extends Entity> void getEntities(EntityTypeTest<Entity, U> test, AbortableIterationConsumer<U> consumer) {
+                for (ServerPlayer player : level.players()) {
+                    U filtered = test.tryCast(player);
+                    if (filtered != null) {
+                        if (consumer.accept(filtered).shouldAbort()) break;
                     }
+                }
+            }
+
+            @Override
+            public void add(Entity entity) {
+                // ダミーのため何もしない
+            }
+
+            @Override
+            public void remove(Entity entity) {
+                // ダミーのため何もしない
+            }
+
+            @Override
+            public int count() {
+                return level.players().size();
+            }
+        };
+
+        // 2. LevelEntityGetterAdapter を継承して返却
+        return new LevelEntityGetterAdapter<Entity>(dummyLookup, sectionStorage) {
+            @Override
+            public @org.jetbrains.annotations.Nullable Entity get(int id) {
+                for (ServerPlayer player : level.players()) {
+                    if (player.getId() == id) return player;
+                }
+                return null;
+            }
+
+            @Override
+            public @org.jetbrains.annotations.Nullable Entity get(UUID uuid) {
+                for (ServerPlayer player : level.players()) {
+                    if (player.getUUID().equals(uuid)) return player;
                 }
                 return null;
             }
 
             @Override
             public Iterable<Entity> getAll() {
-                // キャスト事故防止のため、List<Entity> にまとめ直して返す
-                List<Entity> entities = new ArrayList<>(level.players());
-                return Collections.unmodifiableList(entities);
+                List<Entity> players = new ArrayList<>(level.players());
+                return Collections.unmodifiableList(players);
             }
 
             @Override
@@ -172,9 +217,7 @@ public class UltraDamageLibrarySwordItem extends PickaxeItem {
                 for (ServerPlayer player : level.players()) {
                     U filtered = test.tryCast(player);
                     if (filtered != null) {
-                        if (consumer.accept(filtered).shouldAbort()) {
-                            break;
-                        }
+                        if (consumer.accept(filtered).shouldAbort()) break;
                     }
                 }
             }
@@ -194,9 +237,7 @@ public class UltraDamageLibrarySwordItem extends PickaxeItem {
                     if (player.getBoundingBox().intersects(bounds)) {
                         U filtered = test.tryCast(player);
                         if (filtered != null) {
-                            if (consumer.accept(filtered).shouldAbort()) {
-                                break;
-                            }
+                            if (consumer.accept(filtered).shouldAbort()) break;
                         }
                     }
                 }

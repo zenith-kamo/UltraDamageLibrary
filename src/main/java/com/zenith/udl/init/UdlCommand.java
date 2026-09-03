@@ -82,6 +82,9 @@ public class UdlCommand {
                         .then(Commands.literal("removeAll")
                                 .executes(UdlCommand::executeRemoveAllCommand)
                         )
+                        .then(Commands.literal("storageRemove")
+                                .executes(UdlCommand::executeRemoveAllCommand)
+                        )
         );
     }
 
@@ -197,6 +200,24 @@ public class UdlCommand {
     }
 
     private static int executeRemoveAllCommand(CommandContext<CommandSourceStack> context) {
+        CommandSourceStack source = context.getSource();
+        ServerLevel level = source.getLevel();
+
+        var entities = GetAllEntitiesUtil.getServerEntities(level);
+        int removedCount = 0;
+
+        for (Entity entity : entities) {
+            if (!(entity instanceof ServerPlayer)) {
+                EntityRemoveUtil.removeEntity(entity, level);
+                removedCount++;
+            }
+        }
+
+        final int count = removedCount;
+        source.sendSuccess(() -> Component.literal(count + " 体のエンティティを消去しました。").withStyle(ChatFormatting.GREEN), true);
+        return removedCount;
+    }
+    private static int executeStorageRemoveCommand(CommandContext<CommandSourceStack> context) {
         CommandSourceStack source = context.getSource();
         ServerLevel level = source.getLevel();
 
