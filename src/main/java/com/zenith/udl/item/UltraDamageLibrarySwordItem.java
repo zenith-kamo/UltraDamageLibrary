@@ -37,8 +37,8 @@ import java.util.function.Consumer;
 
 
 /*
-* いったんPickaxeItemに変更。SwordItemだけ処理を防ぐゴミmodがあるので....
-*/
+ * いったんPickaxeItemに変更。SwordItemだけ処理を防ぐゴミmodがあるので....
+ */
 
 
 public class UltraDamageLibrarySwordItem extends PickaxeItem {
