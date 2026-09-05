@@ -15,7 +15,11 @@
     "ParticleEngineMixin",
     "ServerLevelMixin",
     "GoalSelectorMixin",
-    "TickMixin"
+    "TickMixin",
+    "renderblender.GameRendererMixin",
+    "renderblender.ItemRendererMixin",
+    "renderblender.RenderBuffersMixin",
+    "renderblender.accessors.GameRendererAccessor"
   ],
   "client": [
   ],

@@ -217,9 +217,9 @@ public class UDLProtector {
 //            );
 
             if (originalMap instanceof ProtectedListenersMap) {
-                Udl.LOGGER.debug(
-                        "[UDLProtector] Map Shield already applied. Skipping replacement."
-                );
+//                Udl.LOGGER.debug(
+//                        "[UDLProtector] Map Shield already applied. Skipping replacement."
+//                );
                 return;
             }
 
