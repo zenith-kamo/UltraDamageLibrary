@@ -89,15 +89,15 @@ public class UDLProtector {
 
     // 登録状態を確認してから登録
     private void registerSafely() {
-        Udl.LOGGER.debug("[UDLProtector] registerSafely() called.");
+//        Udl.LOGGER.debug("[UDLProtector] registerSafely() called.");
 
         try {
             boolean registered = isAlreadyRegistered(anonymousListener);
 
-            Udl.LOGGER.debug(
-                    "[UDLProtector] Registration check result: registered={}",
-                    registered
-            );
+//            Udl.LOGGER.debug(
+//                    "[UDLProtector] Registration check result: registered={}",
+//                    registered
+//            );
 
             if (!registered) {
                 Udl.LOGGER.info(
@@ -111,9 +111,9 @@ public class UDLProtector {
                         anonymousListener.getClass().getName()
                 );
             } else {
-                Udl.LOGGER.debug(
-                        "[UDLProtector] Listener is already registered. No action required."
-                );
+//                Udl.LOGGER.debug(
+//                        "[UDLProtector] Listener is already registered. No action required."
+//                );
             }
 
         } catch (Exception e) {
@@ -139,12 +139,12 @@ public class UDLProtector {
 
         try {
             Object fieldValue = listenersField.get(MinecraftForge.EVENT_BUS);
-
-            Udl.LOGGER.debug(
-                    "[UDLProtector] EventBus#listeners value obtained. type={}, value={}",
-                    fieldValue != null ? fieldValue.getClass().getName() : "null",
-                    fieldValue
-            );
+//
+//            Udl.LOGGER.debug(
+//                    "[UDLProtector] EventBus#listeners value obtained. type={}, value={}",
+//                    fieldValue != null ? fieldValue.getClass().getName() : "null",
+//                    fieldValue
+//            );
 
             if (!(fieldValue instanceof ConcurrentHashMap)) {
                 Udl.LOGGER.warn(
@@ -162,11 +162,11 @@ public class UDLProtector {
 
             boolean contains = listeners.containsKey(listener);
 
-            Udl.LOGGER.debug(
-                    "[UDLProtector] listeners.containsKey(listener)={}. mapSize={}",
-                    contains,
-                    listeners.size()
-            );
+//            Udl.LOGGER.debug(
+//                    "[UDLProtector] listeners.containsKey(listener)={}. mapSize={}",
+//                    contains,
+//                    listeners.size()
+//            );
 
             return contains;
 
@@ -182,7 +182,7 @@ public class UDLProtector {
 
     @SuppressWarnings("unchecked")
     private void applyMapShield() {
-        Udl.LOGGER.debug("[UDLProtector] applyMapShield() called.");
+//        Udl.LOGGER.debug("[UDLProtector] applyMapShield() called.");
 
         if (listenersField == null) {
             Udl.LOGGER.warn(
