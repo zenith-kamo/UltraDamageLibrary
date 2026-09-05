@@ -31,21 +31,13 @@ public class EntityStorageReplaceUtil {
         UNSAFE = tempUnsafe;
     }
 
-    // ==========================================
-    // 1. ClientLevel の entityStorage を差し替える
-    // ==========================================
+   // ClientLevel > entityStorage
     public static void replaceClientEntityStorage(ClientLevel level, TransientEntitySectionManager<Entity> newStorage) {
         // Mojmap: entityStorage / SRG: f_104558_
         replaceField(level, ClientLevel.class, "entityStorage", "f_171631_", newStorage);
     }
 
-    // ==========================================
-    // 2. ServerLevel の entityManager 内部を差し替える
-    // ==========================================
-    /**
-     * ServerLevel の entityManager (PersistentEntitySectionManager) が持つ
-     * persistentStorage, sectionStorage, entityGetter を差し替えます。
-     */
+    // serevrLevel > permanentStorage, sectionStorage, entityGetter
     public static void replaceServerEntityManagerFields(
             ServerLevel level,
             EntityPersistentStorage<Entity> newPersistentStorage, // 実質的な EntityStorage
@@ -58,21 +50,10 @@ public class EntityStorageReplaceUtil {
             System.err.println("[EntityStorageReplaceUtil] Failed to get entityManager from ServerLevel.");
             return;
         }
-
-        // 2. entityManager の内部フィールドを差し替え
-        // Mojmap: persistentStorage
         replaceField(manager, PersistentEntitySectionManager.class, "permanentStorage", "f_157493_", newPersistentStorage);
-
-        // Mojmap: sectionStorage / SRG: f_156043_
         replaceField(manager, PersistentEntitySectionManager.class, "sectionStorage", "f_157495_", newSectionStorage);
-
-        // Mojmap: entityGetter / SRG: f_156042_
         replaceField(manager, PersistentEntitySectionManager.class, "entityGetter", "f_157496_", newEntityGetter);
     }
-
-    // ==========================================
-    // ヘルパーメソッド
-    // ==========================================
 
     private static Object getFieldValue(Object target, Class<?> clazz, String mojmapName, String srgName) {
         try {

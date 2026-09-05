@@ -18,7 +18,7 @@ public class TimeStopShaderHandler {
     private static boolean active = false;
     private static float progress = 0.0f;
 
-    // フェードにかける時間（Tick数）。20Tick = 1秒
+    // フェードにかける時間
     private static final float FADE_SPEED = 1.0f / 20.0f;
 
     public static void setActive(boolean isActive) {

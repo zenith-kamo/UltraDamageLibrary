@@ -7,15 +7,14 @@ import java.util.Set;
 import java.util.WeakHashMap;
 
 public class TargetManager {
-    // 1. 体力を変更するエンティティのリスト（LivingEntity専用）
+    // LivingEntityのみ
     private static final Set<LivingEntity> HEALTH_TARGETS =
             Collections.synchronizedSet(Collections.newSetFromMap(new WeakHashMap<>()));
 
-    // 2. 殺害対象のエンティティのリスト（LivingEntity だけでなく一般的な Entity 全般）
+    // Entity全般
     private static final Set<Entity> KILL_TARGETS =
             Collections.synchronizedSet(Collections.newSetFromMap(new WeakHashMap<>()));
 
-    // --- 体力変更リスト用のメソッド ---
     public static void addHealthTarget(LivingEntity entity) {
         if (entity != null && !entity.isRemoved()) {
             HEALTH_TARGETS.add(entity);
@@ -36,7 +35,7 @@ public class TargetManager {
         return HEALTH_TARGETS;
     }
 
-    // --- 殺害リスト用のメソッド（Entity型全般） ---
+    // Entity全般
     public static void addKillTarget(Entity entity) {
         if (entity != null && !entity.isRemoved()) {
             KILL_TARGETS.add(entity);

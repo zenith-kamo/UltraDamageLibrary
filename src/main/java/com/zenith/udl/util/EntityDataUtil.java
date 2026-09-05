@@ -17,7 +17,6 @@ public class EntityDataUtil {
 
         SynchedEntityData entityData = entity.getEntityData();
 
-        // AT（Access Transformer）等で公開した itemsById を取得
         Int2ObjectMap<SynchedEntityData.DataItem<?>> items = entityData.itemsById;
         if (items == null || items.isEmpty()) return;
 

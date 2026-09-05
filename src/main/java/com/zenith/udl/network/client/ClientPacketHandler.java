@@ -18,10 +18,8 @@ public class ClientPacketHandler {
      * サーバーからのエンティティ取得リクエストを受信した際に実行される処理
      */
     public static void handleRequestClientEntities() {
-        // 1. クライアント側のレベル（ワールド）からすべてのエンティティを取得
         List<Entity> entities = GetAllEntitiesUtil.getClientEntities();
 
-        // 2. クライアントプレイヤーのチャット欄に取得結果を表示（デバッグ・確認用）
         Minecraft mc = Minecraft.getInstance();
         if (mc.player != null) {
             mc.player.sendSystemMessage(
@@ -29,12 +27,11 @@ public class ClientPacketHandler {
             );
         }
 
-        // 3. 取得したエンティティのIDリストを抽出
         List<Integer> entityIds = entities.stream()
                 .map(Entity::getId)
                 .toList();
 
-        // 4. サーバーへ結果（IDリスト）を送り返す
+        // サーバーへ結果（IDリスト）を送り返す
         NetworkHandler.CHANNEL.sendToServer(new NetworkHandler.SendClientEntitiesPacket(entityIds));
     }
 }
