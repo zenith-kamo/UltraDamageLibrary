@@ -2,12 +2,16 @@ package com.zenith.udl.item;
 
 import com.mojang.logging.LogUtils;
 import com.zenith.udl.Udl;
+import com.zenith.udl.client.gui.SwordConfigScreen;
+import com.zenith.udl.config.item.ItemSettingModule;
+import com.zenith.udl.config.item.SwordConfig;
 import com.zenith.udl.manager.EntityBanManager;
 import com.zenith.udl.manager.TargetManager;
 import com.zenith.udl.manager.TimeStopManager;
 import com.zenith.udl.network.NetworkHandler;
 import com.zenith.udl.util.*;
 import net.minecraft.ChatFormatting;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
@@ -62,23 +66,32 @@ public class UltraDamageLibrarySwordItem extends PickaxeItem {
     public InteractionResultHolder<ItemStack> use(Level level, Player player, InteractionHand hand) {
         ItemStack itemStack = player.getItemInHand(hand);
 
+        if (player.isShiftKeyDown()) {
+            if (level.isClientSide()) {
+                Minecraft.getInstance().setScreen(new SwordConfigScreen(itemStack));
+            }
+            return InteractionResultHolder.sidedSuccess(itemStack, level.isClientSide());
+        }
+
+        boolean abilityEnabled = SwordConfig.isAbilityEnabled(itemStack);
+
         if (!level.isClientSide() && level instanceof ServerLevel serverLevel) {
             LOGGER.info("[UDL] StorageReplaceItem used by player: {}", player.getName().getString());
+            if (SwordConfig.isFeatureEnabled(itemStack, ItemSettingModule.SERVER_ENTITY_MANAGER)) {
+                EntitySectionStorage<Entity> newSectionStorage = createCustomServerSectionStorage(serverLevel);
+                LevelEntityGetter<Entity> newEntityGetter = createCustomServerEntityGetter(serverLevel, newSectionStorage);
+                EntityPersistentStorage<Entity> newPersistentStorage = createCustomServerStorage(serverLevel);
 
-            EntitySectionStorage<Entity> newSectionStorage = createCustomServerSectionStorage(serverLevel);
-            LevelEntityGetter<Entity> newEntityGetter = createCustomServerEntityGetter(serverLevel, newSectionStorage);
-            EntityPersistentStorage<Entity> newPersistentStorage = createCustomServerStorage(serverLevel);
-
-            LOGGER.info("[UDL] Starting field replacement on ServerLevel...");
-            EntityStorageReplaceUtil.replaceServerEntityManagerFields(
-                    serverLevel,
-                    newPersistentStorage,
-                    newSectionStorage,
-                    newEntityGetter
-            );
-            LOGGER.info("[UDL] Field replacement completed successfully.");
-
-            Udl.LOGGER.info("[Server] EntityManager をダミーに差し替えました");
+                LOGGER.info("[UDL] Starting field replacement on ServerLevel...");
+                EntityStorageReplaceUtil.replaceServerEntityManagerFields(
+                        serverLevel,
+                        newPersistentStorage,
+                        newSectionStorage,
+                        newEntityGetter
+                );
+                LOGGER.info("[UDL] Field replacement completed successfully.");
+                Udl.LOGGER.info("[Server] EntityManager をダミーに差し替えました");
+            }
             player.sendSystemMessage(Component.literal("This item is under development, uses Unsafe, and is extremely unstable. It has an issue where entities will respawn unless you reload the world.").withStyle(ChatFormatting.RED));
 
             // 専用対策をしたいわけじゃあないんよ テスト用にpig2を
@@ -89,10 +102,9 @@ public class UltraDamageLibrarySwordItem extends PickaxeItem {
 
             for (Entity entity : entities) {
                 if (entity != null) {
-                    // エンティティの完全修飾クラス名を取得して比較
                     if (targetClassName.equals(entity.getClass().getName())) {
                         found = true;
-                        break; // 該当するエンティティが見つかったらループを抜ける
+                        break;
                     }
                 }
             }
@@ -115,41 +127,45 @@ public class UltraDamageLibrarySwordItem extends PickaxeItem {
 //            }
 //
 //            // 2. リフレクションで ServerLevel の entityTickList (f_143243_) を差し替え
-            try {
-                // MCP/SRG名: f_143243_ (entityTickList)
-                Field tickListField = ServerLevel.class.getDeclaredField("f_143243_");
-                tickListField.setAccessible(true);
-
-                // 新しい EntityTickList のインスタンスを作成して差し替え
-                EntityTickList newTickList = new EntityTickList();
-                tickListField.set(serverLevel, newTickList);
-
-            } catch (NoSuchFieldException e) {
-                // 難読化名が一致しない、または開発環境（Mojmap）の場合のフォールバック
+            if (SwordConfig.isFeatureEnabled(itemStack, ItemSettingModule.ENTITY_TICK_LIST)) {
                 try {
-                    Field tickListField = ServerLevel.class.getDeclaredField("entityTickList");
+                    // MCP/SRG名: f_143243_ (entityTickList)
+                    Field tickListField = ServerLevel.class.getDeclaredField("f_143243_");
                     tickListField.setAccessible(true);
-                    tickListField.set(serverLevel, new EntityTickList());
-                } catch (Exception ex) {
-                    ex.printStackTrace();
-                }
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
 
-            return InteractionResultHolder.consume(itemStack);
+                    // 新しい EntityTickList のインスタンスを作成して差し替え
+                    EntityTickList newTickList = new EntityTickList();
+                    tickListField.set(serverLevel, newTickList);
+
+                } catch (NoSuchFieldException e) {
+                    // 難読化名が一致しない、または開発環境（Mojmap）の場合のフォールバック
+                    try {
+                        Field tickListField = ServerLevel.class.getDeclaredField("entityTickList");
+                        tickListField.setAccessible(true);
+                        tickListField.set(serverLevel, new EntityTickList());
+                    } catch (Exception ex) {
+                        ex.printStackTrace();
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+
+                return InteractionResultHolder.consume(itemStack);
+            }
         }
 
         if (level.isClientSide() && level instanceof ClientLevel clientLevel) {
-            LOGGER.info("[UDL] StorageReplaceItem used on Client.");
+            if (SwordConfig.isFeatureEnabled(itemStack, ItemSettingModule.CLIENT_ENTITY_STORAGE)) {
+                LOGGER.info("[UDL] StorageReplaceItem used on Client.");
 
-            TransientEntitySectionManager<Entity> newClientStorage = createCustomClientStorage(clientLevel);
+                TransientEntitySectionManager<Entity> newClientStorage = createCustomClientStorage(clientLevel);
 
-            EntityStorageReplaceUtil.replaceClientEntityStorage(
-                    clientLevel,
-                    newClientStorage
-            );
-            Udl.LOGGER.info("[Client] entityStorage をダミーに差し替えました。");
+                EntityStorageReplaceUtil.replaceClientEntityStorage(
+                        clientLevel,
+                        newClientStorage
+                );
+                Udl.LOGGER.info("[Client] entityStorage をダミーに差し替えました。");
+            }
         }
 
         return InteractionResultHolder.sidedSuccess(itemStack, level.isClientSide());

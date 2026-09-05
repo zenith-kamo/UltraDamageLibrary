@@ -1,11 +1,15 @@
 package com.zenith.udl.network;
 
+import com.zenith.udl.config.item.ItemSettingModule;
+import com.zenith.udl.config.item.SwordConfig;
 import com.zenith.udl.handler.TimeStopShaderHandler;
+import com.zenith.udl.item.UltraDamageLibrarySwordItem;
 import com.zenith.udl.network.client.ClientPacketHandler;
 import net.minecraft.network.FriendlyByteBuf;
-import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.fml.DistExecutor;
 import net.minecraftforge.network.NetworkDirection;
@@ -59,9 +63,19 @@ public class NetworkHandler {
                 SendClientEntitiesPacket::handle,
                 Optional.of(NetworkDirection.PLAY_TO_SERVER)
         );
+
+        // 4. 剣の設定更新パケット (C2S)
+        CHANNEL.registerMessage(
+                id++,
+                PacketUpdateSwordConfig.class,
+                PacketUpdateSwordConfig::encode,
+                PacketUpdateSwordConfig::new,
+                PacketUpdateSwordConfig::handle,
+                Optional.of(NetworkDirection.PLAY_TO_SERVER)
+        );
     }
 
-    // 送信メソッド (ヘルパー関数)
+    // --- 送信メソッド (ヘルパー関数) ---
 
     /**
      * 全プレイヤーに時停止状態を送信
@@ -84,7 +98,15 @@ public class NetworkHandler {
         CHANNEL.send(PacketDistributor.PLAYER.with(() -> player), new RequestClientEntitiesPacket());
     }
 
-    // パケットデータ
+    /**
+     * 剣の設定更新パケットをサーバーへ送信
+     */
+    public static void sendUpdateSwordConfig(boolean abilityEnabled, int featureMask) {
+        CHANNEL.sendToServer(new PacketUpdateSwordConfig(abilityEnabled, featureMask));
+    }
+
+    // --- パケットデータ定義 ---
+
     /**
      * 1. 時停止用パケット (S2C)
      */
@@ -166,9 +188,48 @@ public class NetworkHandler {
             ctx.enqueueWork(() -> {
                 ServerPlayer player = ctx.getSender();
                 if (player != null) {
-//                    player.sendSystemMessage(
-//                            Component.literal("サーバー受信: クライアントから " + msg.entityIds.size() + " 個のエンティティIDを受け取りました。")
-//                    );
+                    // 受信後の処理
+                }
+            });
+            ctx.setPacketHandled(true);
+        }
+    }
+
+    /**
+     * 4. 剣の設定更新パケット (C2S)
+     */
+    public static class PacketUpdateSwordConfig {
+        private final boolean abilityEnabled;
+        private final int featureMask;
+
+        public PacketUpdateSwordConfig(boolean abilityEnabled, int featureMask) {
+            this.abilityEnabled = abilityEnabled;
+            this.featureMask = featureMask;
+        }
+
+        public PacketUpdateSwordConfig(FriendlyByteBuf buf) {
+            this.abilityEnabled = buf.readBoolean();
+            this.featureMask = buf.readInt();
+        }
+
+        public void encode(FriendlyByteBuf buf) {
+            buf.writeBoolean(this.abilityEnabled);
+            buf.writeInt(this.featureMask);
+        }
+
+        public static void handle(PacketUpdateSwordConfig msg, Supplier<NetworkEvent.Context> ctxSupplier) {
+            NetworkEvent.Context ctx = ctxSupplier.get();
+            ctx.enqueueWork(() -> {
+                ServerPlayer player = ctx.getSender();
+                if (player != null) {
+                    ItemStack mainHand = player.getItemInHand(InteractionHand.MAIN_HAND);
+                    if (mainHand.getItem() instanceof UltraDamageLibrarySwordItem) {
+                        SwordConfig.setAbilityEnabled(mainHand, msg.abilityEnabled);
+                        for (ItemSettingModule module : ItemSettingModule.values()) {
+                            boolean enabled = (msg.featureMask & (1 << module.ordinal())) != 0;
+                            SwordConfig.setFeatureEnabled(mainHand, module, enabled);
+                        }
+                    }
                 }
             });
             ctx.setPacketHandled(true);
