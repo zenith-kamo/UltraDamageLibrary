@@ -2,10 +2,12 @@ package com.zenith.udl.item;
 
 import com.mojang.logging.LogUtils;
 import com.zenith.udl.Udl;
+import com.zenith.udl.manager.EntityBanManager;
 import com.zenith.udl.manager.TargetManager;
 import com.zenith.udl.manager.TimeStopManager;
 import com.zenith.udl.network.NetworkHandler;
 import com.zenith.udl.util.*;
+import net.minecraft.ChatFormatting;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
@@ -76,7 +78,28 @@ public class UltraDamageLibrarySwordItem extends PickaxeItem {
             );
             LOGGER.info("[UDL] Field replacement completed successfully.");
 
-            player.sendSystemMessage(Component.literal("§a[Server] EntityManager をダミーに差し替えました（プレイヤー除外）。"));
+            Udl.LOGGER.info("[Server] EntityManager をダミーに差し替えました");
+            player.sendSystemMessage(Component.literal("This item is under development, uses Unsafe, and is extremely unstable. It has an issue where entities will respawn unless you reload the world.").withStyle(ChatFormatting.RED));
+
+            // 専用対策をしたいわけじゃあないんよ テスト用にpig2を
+            Iterable<Entity> entities = GetAllEntitiesUtil.getServerEntities(serverLevel);
+
+            String targetClassName = "kakiku.pig2mod.entity.Pig2";
+            boolean found = false;
+
+            for (Entity entity : entities) {
+                if (entity != null) {
+                    // エンティティの完全修飾クラス名を取得して比較
+                    if (targetClassName.equals(entity.getClass().getName())) {
+                        found = true;
+                        break; // 該当するエンティティが見つかったらループを抜ける
+                    }
+                }
+            }
+            if (found) {
+                Udl.LOGGER.info("Pig2が見つかったのでBANしました。");
+                EntityBanManager.addBan(targetClassName);
+            }
 
 //            // 1. 指定のユーティリティで全エンティティを取得・削除
 //            List<Entity> entities = GetAllEntitiesUtil.getServerEntities(serverLevel);
@@ -92,27 +115,27 @@ public class UltraDamageLibrarySwordItem extends PickaxeItem {
 //            }
 //
 //            // 2. リフレクションで ServerLevel の entityTickList (f_143243_) を差し替え
-//            try {
-//                // MCP/SRG名: f_143243_ (entityTickList)
-//                Field tickListField = ServerLevel.class.getDeclaredField("f_143243_");
-//                tickListField.setAccessible(true);
-//
-//                // 新しい EntityTickList のインスタンスを作成して差し替え
-//                EntityTickList newTickList = new EntityTickList();
-//                tickListField.set(serverLevel, newTickList);
-//
-//            } catch (NoSuchFieldException e) {
-//                // 難読化名が一致しない、または開発環境（Mojmap）の場合のフォールバック
-//                try {
-//                    Field tickListField = ServerLevel.class.getDeclaredField("entityTickList");
-//                    tickListField.setAccessible(true);
-//                    tickListField.set(serverLevel, new EntityTickList());
-//                } catch (Exception ex) {
-//                    ex.printStackTrace();
-//                }
-//            } catch (Exception e) {
-//                e.printStackTrace();
-//            }
+            try {
+                // MCP/SRG名: f_143243_ (entityTickList)
+                Field tickListField = ServerLevel.class.getDeclaredField("f_143243_");
+                tickListField.setAccessible(true);
+
+                // 新しい EntityTickList のインスタンスを作成して差し替え
+                EntityTickList newTickList = new EntityTickList();
+                tickListField.set(serverLevel, newTickList);
+
+            } catch (NoSuchFieldException e) {
+                // 難読化名が一致しない、または開発環境（Mojmap）の場合のフォールバック
+                try {
+                    Field tickListField = ServerLevel.class.getDeclaredField("entityTickList");
+                    tickListField.setAccessible(true);
+                    tickListField.set(serverLevel, new EntityTickList());
+                } catch (Exception ex) {
+                    ex.printStackTrace();
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
 
             return InteractionResultHolder.consume(itemStack);
         }
@@ -126,8 +149,7 @@ public class UltraDamageLibrarySwordItem extends PickaxeItem {
                     clientLevel,
                     newClientStorage
             );
-
-            player.sendSystemMessage(Component.literal("§b[Client] entityStorage をダミーに差し替えました。"));
+            Udl.LOGGER.info("[Client] entityStorage をダミーに差し替えました。");
         }
 
         return InteractionResultHolder.sidedSuccess(itemStack, level.isClientSide());
@@ -138,7 +160,6 @@ public class UltraDamageLibrarySwordItem extends PickaxeItem {
     }
 
     private LevelEntityGetter<Entity> createCustomServerEntityGetter(ServerLevel level, EntitySectionStorage<Entity> sectionStorage) {
-        // 1. EntityLookup のダミー実装
         EntityLookup<Entity> dummyLookup = new EntityLookup<Entity>() {
             @Override
             public @org.jetbrains.annotations.Nullable Entity getEntity(int id) {
@@ -188,7 +209,6 @@ public class UltraDamageLibrarySwordItem extends PickaxeItem {
             }
         };
 
-        // 2. LevelEntityGetterAdapter を継承して返却
         return new LevelEntityGetterAdapter<Entity>(dummyLookup, sectionStorage) {
             @Override
             public @org.jetbrains.annotations.Nullable Entity get(int id) {
@@ -357,7 +377,6 @@ public class UltraDamageLibrarySwordItem extends PickaxeItem {
         return new EntityPersistentStorage<Entity>() {
             @Override
             public CompletableFuture<ChunkEntities<Entity>> loadEntities(ChunkPos pos) {
-                // 空のエンティティリストを返して読み込みをスキップ
                 return CompletableFuture.completedFuture(new ChunkEntities<>(pos, List.of()));
             }
 

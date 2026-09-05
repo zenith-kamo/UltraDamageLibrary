@@ -31,7 +31,7 @@ public class EntityRemoveUtil {
             livingEntity.shouldRender(0,0,0);
             livingEntity.handleEntityEvent(EntityEvent.DEATH);
         }
-        serverLevel.getChunkSource().chunkMap.removeEntity(entity);
+//        serverLevel.getChunkSource().chunkMap.removeEntity(entity);
 
     }
 }

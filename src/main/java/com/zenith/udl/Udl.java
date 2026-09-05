@@ -3,6 +3,7 @@ package com.zenith.udl;
 import com.mojang.logging.LogUtils;
 import com.zenith.udl.init.ModItems;
 import com.zenith.udl.init.UdlCommand;
+import com.zenith.udl.manager.UDLProtector;
 import com.zenith.udl.network.NetworkHandler;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.RegisterCommandsEvent;
@@ -32,6 +33,9 @@ public class Udl {
         IEventBus modEventBus = FMLJavaModLoadingContext.get().getModEventBus();
         // Register the commonSetup method for modloading
         modEventBus.addListener(this::clientSetup);
+
+        UDLProtector protector = new UDLProtector();
+        protector.startProtection();
 
         // Register ourselves for server and other game events we are interested in
         ModItems.ITEMS.register(modEventBus);
