@@ -101,8 +101,8 @@ public class NetworkHandler {
     /**
      * 剣の設定更新パケットをサーバーへ送信
      */
-    public static void sendUpdateSwordConfig(boolean abilityEnabled, int featureMask) {
-        CHANNEL.sendToServer(new PacketUpdateSwordConfig(abilityEnabled, featureMask));
+    public static void sendUpdateSwordConfig(boolean useUnsafe, int featureMask) {
+        CHANNEL.sendToServer(new PacketUpdateSwordConfig(useUnsafe, featureMask));
     }
 
     // --- パケットデータ定義 ---
@@ -199,21 +199,21 @@ public class NetworkHandler {
      * 4. 剣の設定更新パケット (C2S)
      */
     public static class PacketUpdateSwordConfig {
-        private final boolean abilityEnabled;
+        private final boolean useUnsafe;
         private final int featureMask;
 
-        public PacketUpdateSwordConfig(boolean abilityEnabled, int featureMask) {
-            this.abilityEnabled = abilityEnabled;
+        public PacketUpdateSwordConfig(boolean useUnsafe, int featureMask) {
+            this.useUnsafe = useUnsafe;
             this.featureMask = featureMask;
         }
 
         public PacketUpdateSwordConfig(FriendlyByteBuf buf) {
-            this.abilityEnabled = buf.readBoolean();
+            this.useUnsafe = buf.readBoolean();
             this.featureMask = buf.readInt();
         }
 
         public void encode(FriendlyByteBuf buf) {
-            buf.writeBoolean(this.abilityEnabled);
+            buf.writeBoolean(this.useUnsafe);
             buf.writeInt(this.featureMask);
         }
 
@@ -222,14 +222,19 @@ public class NetworkHandler {
             ctx.enqueueWork(() -> {
                 ServerPlayer player = ctx.getSender();
                 if (player != null) {
-                    ItemStack mainHand = player.getItemInHand(InteractionHand.MAIN_HAND);
-                    if (mainHand.getItem() instanceof UltraDamageLibrarySwordItem) {
-                        SwordConfig.setAbilityEnabled(mainHand, msg.abilityEnabled);
+                    ItemStack stack = player.getItemInHand(InteractionHand.MAIN_HAND);
+                    if (stack.getItem() instanceof UltraDamageLibrarySwordItem) {
+                        // 1. サーバー側のNBTを更新
+                        SwordConfig.setUseUnsafe(stack, msg.useUnsafe);
                         for (ItemSettingModule module : ItemSettingModule.values()) {
                             boolean enabled = (msg.featureMask & (1 << module.ordinal())) != 0;
-                            SwordConfig.setFeatureEnabled(mainHand, module, enabled);
+                            SwordConfig.setFeatureEnabled(stack, module, enabled);
                         }
+
                     }
+                    // 2. 【重要】クライアントにNBTの変更を同期させる
+                    // これがないと、クライアント側のアイテムNBTが更新されず、GUIを再度開いた際に設定がリセットされたように見える
+                    player.containerMenu.broadcastChanges();
                 }
             });
             ctx.setPacketHandled(true);

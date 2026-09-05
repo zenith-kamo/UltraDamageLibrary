@@ -4,17 +4,17 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.item.ItemStack;
 
 public class SwordConfig {
-    private static final String KEY_ABILITY_ENABLED = "SpecialAbilityEnabled";
+    private static final String KEY_USE_UNSAFE = "UseUnsafe"; // 名前を変更
     private static final String KEY_FEATURE_MASK = "EnabledFeatures";
 
-    // 特殊機能全体のオン/オフ
-    public static boolean isAbilityEnabled(ItemStack stack) {
+    // 危険な最適化機能全体のオン/オフ
+    public static boolean isUseUnsafe(ItemStack stack) {
         CompoundTag tag = stack.getOrCreateTag();
-        return tag.getBoolean(KEY_ABILITY_ENABLED);
+        return tag.getBoolean(KEY_USE_UNSAFE);
     }
 
-    public static void setAbilityEnabled(ItemStack stack, boolean value) {
-        stack.getOrCreateTag().putBoolean(KEY_ABILITY_ENABLED, value);
+    public static void setUseUnsafe(ItemStack stack, boolean value) {
+        stack.getOrCreateTag().putBoolean(KEY_USE_UNSAFE, value);
     }
 
     // 個別機能のオン/オフ

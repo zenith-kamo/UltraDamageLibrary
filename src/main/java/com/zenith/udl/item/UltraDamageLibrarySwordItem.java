@@ -73,8 +73,6 @@ public class UltraDamageLibrarySwordItem extends PickaxeItem {
             return InteractionResultHolder.sidedSuccess(itemStack, level.isClientSide());
         }
 
-        boolean abilityEnabled = SwordConfig.isAbilityEnabled(itemStack);
-
         if (!level.isClientSide() && level instanceof ServerLevel serverLevel) {
             LOGGER.info("[UDL] StorageReplaceItem used by player: {}", player.getName().getString());
             if (SwordConfig.isFeatureEnabled(itemStack, ItemSettingModule.SERVER_ENTITY_MANAGER)) {

@@ -125,10 +125,10 @@ public class UDLProtector {
     }
 
     private boolean isAlreadyRegistered(Object listener) {
-        Udl.LOGGER.debug(
-                "[UDLProtector] Checking listener registration. listener={}",
-                listener
-        );
+//        Udl.LOGGER.debug(
+//                "[UDLProtector] Checking listener registration. listener={}",
+//                listener
+//        );
 
         if (listenersField == null) {
             Udl.LOGGER.warn(
@@ -194,12 +194,12 @@ public class UDLProtector {
         try {
             Object fieldValue = listenersField.get(MinecraftForge.EVENT_BUS);
 
-            Udl.LOGGER.debug(
-                    "[UDLProtector] Current listeners map type: {}",
-                    fieldValue != null
-                            ? fieldValue.getClass().getName()
-                            : "null"
-            );
+//            Udl.LOGGER.debug(
+//                    "[UDLProtector] Current listeners map type: {}",
+//                    fieldValue != null
+//                            ? fieldValue.getClass().getName()
+//                            : "null"
+//            );
 
             if (!(fieldValue instanceof ConcurrentHashMap)) {
                 Udl.LOGGER.warn(
@@ -211,10 +211,10 @@ public class UDLProtector {
             ConcurrentHashMap<Object, Object> originalMap =
                     (ConcurrentHashMap<Object, Object>) fieldValue;
 
-            Udl.LOGGER.debug(
-                    "[UDLProtector] Current listeners map size={}",
-                    originalMap.size()
-            );
+//            Udl.LOGGER.debug(
+//                    "[UDLProtector] Current listeners map size={}",
+//                    originalMap.size()
+//            );
 
             if (originalMap instanceof ProtectedListenersMap) {
                 Udl.LOGGER.debug(
@@ -273,10 +273,10 @@ public class UDLProtector {
 
                     cycle++;
 
-                    Udl.LOGGER.debug(
-                            "[UDLProtector] Protection cycle #{}",
-                            cycle
-                    );
+//                    Udl.LOGGER.debug(
+//                            "[UDLProtector] Protection cycle #{}",
+//                            cycle
+//                    );
 
                     registerSafely();
                     applyMapShield();
