@@ -1,0 +1,6 @@
+{
+  "parent": "item/handheld",
+  "textures": {
+    "layer0": "udl:item/ultra_damage_library_sword"
+  }
+}

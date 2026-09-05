@@ -25,6 +25,7 @@ public class SwordConfigScreen extends Screen {
     private static final int PANEL_WIDTH = 340;
     private static final int PANEL_PADDING = 15;
     private static final int ROW_HEIGHT = 28;
+    private static final int SUB_FEATURE_INDENT = 12; // サブ機能群の左インデント（余白）
 
     public SwordConfigScreen(ItemStack swordStack) {
         super(Component.literal("UltraDamage-Library Settings"));
@@ -43,7 +44,7 @@ public class SwordConfigScreen extends Screen {
         int contentWidth = PANEL_WIDTH - (PANEL_PADDING * 2);
         int startY = panelY + 35;
 
-        // 1. メイン機能 (Use Unsafe) トグル
+        // 1. メイン機能 (Use Unsafe)
         this.addRenderableWidget(new ModernToggleButton(
                 panelX + PANEL_PADDING, startY, contentWidth, 24,
                 Component.literal("Use Unsafe").withStyle(ChatFormatting.RED),
@@ -51,32 +52,58 @@ public class SwordConfigScreen extends Screen {
                 this.useUnsafe,
                 (value) -> {
                     this.useUnsafe = value;
-                    this.rebuildWidgets(); // 子ボタンの有効/無効を更新
+                    this.rebuildWidgets(); // サブ機能の有効/無効状態を更新
                 }
         ));
 
-        // 2. 各機能モジュールのトグル
-        int yOffset = startY + 34;
+        int yOffset = startY + 32;
+
+        // 2. Use Unsafe のサブ機能モジュール群（左側にインデントを追加）
+        int subX = panelX + PANEL_PADDING + SUB_FEATURE_INDENT;
+        int subWidth = contentWidth - SUB_FEATURE_INDENT;
+
         for (ItemSettingModule module : ItemSettingModule.values()) {
+            // DELETE_ENTITY_SAVE_DATA は下の独立メインセクションで配置するため除外
+            if (module == ItemSettingModule.DELETE_ENTITY_SAVE_DATA) {
+                continue;
+            }
+
             final ItemSettingModule mod = module;
             boolean isEnabled = featureStates.getOrDefault(mod, false);
 
             ModernToggleButton btn = new ModernToggleButton(
-                    panelX + PANEL_PADDING, yOffset, contentWidth, 24,
+                    subX, yOffset, subWidth, 24,
                     mod.getDisplayName(),
                     mod.getDescription(),
                     isEnabled,
                     (value) -> featureStates.put(mod, value)
             );
 
-            // 【変更点】 DELETE_ENTITY_SAVE_DATA は Use Unsafe の制御外とし、常に操作可能にする
-            btn.active = this.useUnsafe || mod == ItemSettingModule.DELETE_ENTITY_SAVE_DATA;
+            // Use Unsafe が有効な場合のみ操作可能
+            btn.active = this.useUnsafe;
 
             this.addRenderableWidget(btn);
             yOffset += ROW_HEIGHT;
         }
 
-        // 3. 保存して閉じるボタン
+        // 3. メイン機能 (DELETE_ENTITY_SAVE_DATA)
+        // サブ機能群の下に配置・インデントなし（メイン機能と同じ位置）で独立して操作可能
+        yOffset += 4; // セクション間のスペーサー
+        ItemSettingModule standaloneModule = ItemSettingModule.DELETE_ENTITY_SAVE_DATA;
+        boolean standaloneEnabled = featureStates.getOrDefault(standaloneModule, false);
+
+        ModernToggleButton standaloneBtn = new ModernToggleButton(
+                panelX + PANEL_PADDING, yOffset, contentWidth, 24,
+                standaloneModule.getDisplayName().copy().withStyle(ChatFormatting.GOLD),
+                standaloneModule.getDescription(),
+                standaloneEnabled,
+                (value) -> featureStates.put(standaloneModule, value)
+        );
+        standaloneBtn.active = true; // 常に操作可能
+        this.addRenderableWidget(standaloneBtn);
+        yOffset += ROW_HEIGHT;
+
+        // 4. 保存して閉じるボタン
         this.addRenderableWidget(new ModernButton(
                 panelX + PANEL_PADDING, yOffset + 10, contentWidth, 24,
                 Component.literal("Save and Close"),
@@ -103,7 +130,9 @@ public class SwordConfigScreen extends Screen {
         // 2. メインパネルの描画
         int panelX = (this.width - PANEL_WIDTH) / 2;
         int panelY = 40;
-        int panelH = 35 + 24 + 34 + (ItemSettingModule.values().length * ROW_HEIGHT) + 10 + 24 + PANEL_PADDING;
+
+        // パネル背景の高さ計算
+        int panelH = 35 + 24 + 32 + (ItemSettingModule.values().length * ROW_HEIGHT) + 4 + 10 + 24 + PANEL_PADDING;
 
         // パネル背景 (濃い黒)
         guiGraphics.fill(panelX, panelY, panelX + PANEL_WIDTH, panelY + panelH, 0xFF111111);
